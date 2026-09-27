@@ -265,8 +265,6 @@ var float pHigh   = na
 var float pLow    = na
 var float sesHigh = na
 var float sesLow  = na
-var float sesOpen = na
-var int   sesStartBar = 0
 if newSession
     // На первом баре новой сессии developing-значения ещё относятся к прошлой сессии.
     pPoc        := devPoc
@@ -276,8 +274,6 @@ if newSession
     pLow        := sesLow
     sesHigh     := high
     sesLow      := low
-    sesOpen     := open
-    sesStartBar := bar_index
 else
     sesHigh := math.max(nz(sesHigh, high), high)
     sesLow  := math.min(nz(sesLow, low), low)
@@ -396,12 +392,7 @@ int auctionState = acceptedUp ? 2 : acceptedDn ? -2 : not hasPrevVa ? 0 : close 
 int valueMig = not hasPrevVa or na(devPoc) ? 0 : devPoc > pVah ? 1 : devPoc < pVal ? -1 : 0
 
 f_stateText(int st) =>
-    switch st
-        2  => "Дисбаланс ↑"
-        1  => "Тест вверх"
-        -1 => "Тест вниз"
-        -2 => "Дисбаланс ↓"
-        => "Баланс"
+    st >= 2 ? "Дисбаланс ↑" : st == 1 ? "Тест вверх" : st == -1 ? "Тест вниз" : st <= -2 ? "Дисбаланс ↓" : "Баланс"
 
 f_openText(int ol) =>
     ol > 0 ? "Выше ценности" : ol < 0 ? "Ниже ценности" : "Внутри ценности"
