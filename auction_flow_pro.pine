@@ -62,9 +62,11 @@ acceptMin  = input.int(30, "Принятие: минут за пределами
 showStateBg = input.bool(false, "Фон по состоянию аукциона", group = GRP_AU)
 
 minGrade    = input.string("A", "Минимальный грейд сигнала", options = ["B", "A", "A+"], group = GRP_SIG,
-     tooltip = "Сколько подтверждений нужно сетапу: B = 3 балла, A = 4, A+ = 5 и больше. Чем выше грейд, тем реже и чище сигналы.")
+     tooltip = "Сколько из 5 подтверждений нужно сетапу: B = 3, A = 4, A+ = 5. Чем выше грейд, тем реже сигналы.")
 useAbs      = input.bool(true, "Поглощение", inline = "s1", group = GRP_SIG)
 useFail     = input.bool(true, "Ложный пробой ценности", inline = "s1", group = GRP_SIG)
+useFailHL   = input.bool(false, "Ложный пробой макс./мин. прошлой сессии", group = GRP_SIG,
+     tooltip = "Выключено по умолчанию: на проверке (docs/VALIDATION.md) этот вариант был хуже ложного пробоя границ Value Area.")
 use80       = input.bool(true, "Правило 80%", inline = "s2", group = GRP_SIG)
 useBand     = input.bool(true, "Отбой от ±2σ", inline = "s2", group = GRP_SIG)
 useAccept   = input.bool(true, "Принятие и ретест", inline = "s3", group = GRP_SIG)
@@ -492,7 +494,6 @@ var float  absPendLo   = na
 var int    absPendBar  = 0
 var int    absPendLv   = 0
 var string absPendTxt  = ""
-var float  absPendRvol = na
 bool   absLong   = false
 bool   absShort  = false
 float  absStopL  = na
@@ -501,7 +502,6 @@ int    absLvL    = 0
 int    absLvS    = 0
 string absTxtL   = ""
 string absTxtS   = ""
-float  absSetupRvol = na
 if barstate.isconfirmed and useAbs
     if absConfirm
         if absPendDir != 0 and bar_index - absPendBar > confirmBars
@@ -514,7 +514,6 @@ if barstate.isconfirmed and useAbs
                 absStopL     := absPendLo - bufPx
                 absLvL       := absPendLv
                 absTxtL      := absPendTxt
-                absSetupRvol := absPendRvol
                 absPendDir   := 0
         else if absPendDir < 0
             if close > absPendHi
@@ -524,7 +523,6 @@ if barstate.isconfirmed and useAbs
                 absStopS     := absPendHi + bufPx
                 absLvS       := absPendLv
                 absTxtS      := absPendTxt
-                absSetupRvol := absPendRvol
                 absPendDir   := 0
         if absBull != absBear
             absPendDir  := absBull ? 1 : -1
@@ -533,7 +531,6 @@ if barstate.isconfirmed and useAbs
             absPendBar  := bar_index
             absPendLv   := absBull ? nSup : nRes
             absPendTxt  := absBull ? supTxt : resTxt
-            absPendRvol := rvol
     else
         absLong      := absBull and not absBear
         absShort     := absBear and not absBull
@@ -543,25 +540,26 @@ if barstate.isconfirmed and useAbs
         absLvS       := nRes
         absTxtL      := supTxt
         absTxtS      := resTxt
-        absSetupRvol := rvol
 
 // ───────────────────────────────── Баллы и сигнал ─────────────────────────────────
-// Баллы подтверждения (docs/SPEC.md, раздел 7).
-f_score(int dir, int nLv, bool reversal, float setupRvol) =>
-    int   lvPts = nLv >= 2 ? 2 : nLv >= 1 ? 1 : 0
-    bool  dOk   = dir * deltaPct >= 0.10
-    bool  aOk   = dir > 0 ? absBullRecent : absBearRecent
-    bool  vOk   = dir > 0 ? bullDivRecent : bearDivRecent
-    float rv    = math.max(rvol, nz(setupRvol))
-    bool  rOk   = rv >= 1.3
-    bool  cOk   = reversal ? auctionState * dir > -2 : cvdSes * dir > 0
-    int   pts   = lvPts + (dOk ? 1 : 0) + (aOk ? 1 : 0) + (vOk ? 1 : 0) + (rOk ? 1 : 0) + (cOk ? 1 : 0)
-    string why  = (lvPts > 0 ? "✔" : "✘") + " Уровней у экстремума: " + str.tostring(nLv) + (lvPts == 2 ? " (кластер)" : "") + "\n" +
+// Баллы подтверждения, максимум 5 (docs/SPEC.md, раздел 7). Объём засчитывается,
+// когда проба уровня прошла без инициативы (RVOL < 1.3): на истории пробы на большом
+// объёме чаще продолжались. У поглощения большой объём уже входит в условие сетапа.
+// Дивергенция CVD показывается, но не голосует: на проверке она не добавляла точности.
+f_score(int dir, int nLv, bool reversal, bool isAbs) =>
+    int  lvPts = nLv >= 1 ? 1 : 0
+    bool dOk   = dir * deltaPct >= 0.10
+    bool aOk   = dir > 0 ? absBullRecent : absBearRecent
+    bool rOk   = isAbs or rvol < 1.3
+    bool cOk   = reversal ? auctionState * dir > -2 : cvdSes * dir > 0
+    bool vOk   = dir > 0 ? bullDivRecent : bearDivRecent
+    int  pts   = lvPts + (dOk ? 1 : 0) + (aOk ? 1 : 0) + (rOk ? 1 : 0) + (cOk ? 1 : 0)
+    string why = (lvPts > 0 ? "✔" : "✘") + " Уровень у экстремума" + (nLv > 1 ? " (кластер из " + str.tostring(nLv) + ")" : "") + "\n" +
          (dOk ? "✔" : "✘") + " Дельта бара " + str.tostring(deltaPct * 100, "#") + "%\n" +
          (aOk ? "✔" : "✘") + " Поглощение\n" +
-         (vOk ? "✔" : "✘") + " Дивергенция CVD\n" +
-         (rOk ? "✔" : "✘") + " RVOL " + str.tostring(rv, "#.#") + "x\n" +
-         (cOk ? "✔" : "✘") + (reversal ? " Аукцион не против сделки" : " CVD сессии по сделке")
+         (rOk ? "✔" : "✘") + (isAbs ? " Объём поглощения" : " Проба без инициативы (RVOL " + str.tostring(rvol, "#.#") + "x)") + "\n" +
+         (cOk ? "✔" : "✘") + (reversal ? " Аукцион не против сделки" : " CVD сессии по сделке") +
+         (vOk ? "\nℹ Дивергенция CVD (не голосует)" : "")
     [pts, why]
 
 // Цели: ближайший уровень не ближе 1R, затем не ближе max(2R, T1 + 0.5R).
@@ -598,14 +596,13 @@ string lvTxtL = ""
 float  stopL = na
 int    lvL   = 0
 bool   revL  = true
-float  srvL  = na
 if use80 and r80Long
     candL  := true
     nameL  := "Правило 80%"
     lvTxtL := "Value Area пр."
     stopL  := math.min(lowN, pVal) - bufPx
     lvL    := math.max(nSup, 1)
-else if useFail and (fbLongVal or fbLongLow)
+else if useFail and (fbLongVal or (useFailHL and fbLongLow))
     candL  := true
     nameL  := fbLongVal ? "Ложный пробой VAL" : "Ложный пробой минимума"
     lvTxtL := supTxt == "" ? (fbLongVal ? "VAL пр." : "мин. пр.") : supTxt
@@ -617,7 +614,6 @@ else if absLong
     lvTxtL := absTxtL
     stopL  := absStopL
     lvL    := absLvL
-    srvL   := absSetupRvol
 else if useBand and bandLong
     candL  := true
     nameL  := "Отбой от −2σ"
@@ -639,14 +635,13 @@ string lvTxtS = ""
 float  stopS = na
 int    lvS   = 0
 bool   revS  = true
-float  srvS  = na
 if use80 and r80Short
     candS  := true
     nameS  := "Правило 80%"
     lvTxtS := "Value Area пр."
     stopS  := math.max(highN, pVah) + bufPx
     lvS    := math.max(nRes, 1)
-else if useFail and (fbShortVah or fbShortHigh)
+else if useFail and (fbShortVah or (useFailHL and fbShortHigh))
     candS  := true
     nameS  := fbShortVah ? "Ложный пробой VAH" : "Ложный пробой максимума"
     lvTxtS := resTxt == "" ? (fbShortVah ? "VAH пр." : "макс. пр.") : resTxt
@@ -658,7 +653,6 @@ else if absShort
     lvTxtS := absTxtS
     stopS  := absStopS
     lvS    := absLvS
-    srvS   := absSetupRvol
 else if useBand and bandShort
     candS  := true
     nameS  := "Отбой от +2σ"
@@ -690,8 +684,8 @@ if barstate.isconfirmed
     if r80Long or r80Short
         r80Done := true
     if bar_index - lastSigBar > cooldown and (candL or candS)
-        [ptsL, whyL] = f_score(1, lvL, revL, srvL)
-        [ptsS, whyS] = f_score(-1, lvS, revS, srvS)
+        [ptsL, whyL] = f_score(1, lvL, revL, nameL == "Поглощение")
+        [ptsS, whyS] = f_score(-1, lvS, revS, nameS == "Поглощение")
         int sL  = candL ? ptsL : -1
         int sS  = candS ? ptsS : -1
         int dir = sL >= gradeMin and sL > sS ? 1 : sS >= gradeMin and sS > sL ? -1 : 0
