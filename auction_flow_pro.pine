@@ -13,6 +13,7 @@ const string GRP_SES  = "1. Сессия"
 const string GRP_VWAP = "2. VWAP"
 const string GRP_OF   = "3. Ордерфлоу"
 const string GRP_VP   = "4. Профиль объёма"
+const string GRP_AU   = "5. Аукцион"
 const string GRP_VIS  = "9. Цвета"
 
 anchorIn  = input.string("Авто", "Якорь сессии", options = ["Авто", "День", "Неделя", "Месяц"], group = GRP_SES,
@@ -53,6 +54,10 @@ nakedMax   = input.int(5, "«Голые» POC (0 = выкл.)", minval = 0, maxv
 showHist   = input.bool(true, "Гистограмма профиля", inline = "hs", group = GRP_VP)
 histWidth  = input.int(40, "ширина (баров)", minval = 10, maxval = 200, inline = "hs", group = GRP_VP)
 histDelta  = input.bool(true, "Цвет строк гистограммы по дельте", group = GRP_VP)
+
+acceptMin  = input.int(30, "Принятие: минут за пределами ценности", minval = 1, group = GRP_AU,
+     tooltip = "Сколько времени подряд цена должна закрываться за границей прошлой Value Area, чтобы рынок её «принял». Минимум 2 бара.")
+showStateBg = input.bool(false, "Фон по состоянию аукциона", group = GRP_AU)
 
 colBull   = input.color(#089981, "Покупатели", inline = "c1", group = GRP_VIS)
 colBear   = input.color(#F23645, "Продавцы", inline = "c1", group = GRP_VIS)
@@ -322,6 +327,57 @@ if barstate.isconfirmed and nakedMax > 0
                 nakedPx.remove(j)
                 line.delete(nakedLn.remove(j))
 
+// ───────────────────────────────── Состояние аукциона ─────────────────────────────
+// Рынок либо в балансе (торгуется внутри вчерашней ценности), либо ищет новую
+// ценность. Выход за границу подтверждается временем: N закрытий подряд.
+int  acceptBars = math.max(2, math.round(acceptMin * 60 / chartSec))
+bool hasPrevVa  = not na(pVah) and not na(pVal)
+
+// Тип открытия относительно ценности прошлой сессии.
+var int openLoc = 0
+if newSession
+    openLoc := not hasPrevVa ? 0 : open > pVah ? 1 : open < pVal ? -1 : 0
+
+var int  aboveCnt   = 0
+var int  belowCnt   = 0
+var int  insideCnt  = 0
+var bool acceptedUp = false
+var bool acceptedDn = false
+if newSession
+    acceptedUp := false
+    acceptedDn := false
+aboveCnt  := hasPrevVa and close > pVah ? (newSession ? 1 : aboveCnt + 1) : 0
+belowCnt  := hasPrevVa and close < pVal ? (newSession ? 1 : belowCnt + 1) : 0
+insideCnt := hasPrevVa and close <= pVah and close >= pVal ? (newSession ? 1 : insideCnt + 1) : 0
+if aboveCnt >= acceptBars
+    acceptedUp := true
+    acceptedDn := false
+if belowCnt >= acceptBars
+    acceptedDn := true
+    acceptedUp := false
+if insideCnt >= acceptBars
+    acceptedUp := false
+    acceptedDn := false
+
+// +2 дисбаланс вверх, +1 тест вверх, 0 баланс, −1 тест вниз, −2 дисбаланс вниз.
+int auctionState = acceptedUp ? 2 : acceptedDn ? -2 : not hasPrevVa ? 0 : close > pVah ? 1 : close < pVal ? -1 : 0
+// Миграция ценности: куда смещается developing POC относительно прошлой Value Area.
+int valueMig = not hasPrevVa or na(devPoc) ? 0 : devPoc > pVah ? 1 : devPoc < pVal ? -1 : 0
+
+f_stateText(int st) =>
+    switch st
+        2  => "Дисбаланс ↑"
+        1  => "Тест вверх"
+        -1 => "Тест вниз"
+        -2 => "Дисбаланс ↓"
+        => "Баланс"
+
+f_openText(int ol) =>
+    ol > 0 ? "Выше ценности" : ol < 0 ? "Ниже ценности" : "Внутри ценности"
+
+f_migText(int vm) =>
+    vm > 0 ? "Смещается вверх" : vm < 0 ? "Смещается вниз" : "Перекрытие"
+
 // ───────────────────────────────── Отрисовка: VWAP ────────────────────────────────
 // На первом баре сессии линии прерываются, чтобы сессии не склеивались.
 pVwap = plot(showVwap and not newSession ? vwapLine : na, "VWAP", color = colVwap, linewidth = 2, style = plot.style_linebr)
@@ -382,3 +438,6 @@ if showHist and barstate.islast and not na(vpPoc) and not na(binSize)
             color base  = histDelta ? (rowD.get(r) >= 0 ? colBull : colBear) : colVa
             color cRow  = isPoc ? colPoc : color.new(base, inVa ? 35 : 75)
             histBoxes.push(box.new(x0, top, x0 + w, bot, border_color = cRow, border_width = 1, bgcolor = cRow))
+
+// ───────────────────────────────── Отрисовка: аукцион ─────────────────────────────
+bgcolor(showStateBg ? (auctionState == 2 ? color.new(colBull, 92) : auctionState == -2 ? color.new(colBear, 92) : na) : na, title = "Фон состояния аукциона")
