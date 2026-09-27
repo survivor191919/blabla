@@ -1,0 +1,82 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Auction Flow Pro (AFP)
+//  Ордерфлоу + профиль объёма + VWAP + теория аукциона.
+//  Полная спецификация логики: docs/SPEC.md
+//  Аналитический инструмент, не финансовый совет.
+// ═══════════════════════════════════════════════════════════════════════════════
+indicator("Auction Flow Pro — ордерфлоу, профиль, VWAP", shorttitle = "AFP", overlay = true,
+     max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500)
+
+// ───────────────────────────────── Настройки ─────────────────────────────────────
+const string GRP_SES  = "1. Сессия"
+const string GRP_VWAP = "2. VWAP"
+const string GRP_VIS  = "9. Цвета"
+
+anchorIn  = input.string("Авто", "Якорь сессии", options = ["Авто", "День", "Неделя", "Месяц"], group = GRP_SES,
+     tooltip = "Период, на котором строятся VWAP, профиль объёма и CVD. Авто: день на внутридневных графиках, месяц на дневном, год на недельном и старше.")
+
+vwapSrc   = input.source(hlc3, "Источник VWAP", group = GRP_VWAP)
+showVwap  = input.bool(true, "VWAP", inline = "vw", group = GRP_VWAP)
+showBand1 = input.bool(true, "±1σ", inline = "vw", group = GRP_VWAP)
+showBand2 = input.bool(true, "±2σ", inline = "vw", group = GRP_VWAP)
+showBand3 = input.bool(false, "±3σ", inline = "vw", group = GRP_VWAP)
+bandMult1 = input.float(1.0, "Множители σ", minval = 0.1, step = 0.1, inline = "bm", group = GRP_VWAP)
+bandMult2 = input.float(2.0, "", minval = 0.1, step = 0.1, inline = "bm", group = GRP_VWAP)
+bandMult3 = input.float(3.0, "", minval = 0.1, step = 0.1, inline = "bm", group = GRP_VWAP)
+
+colBull   = input.color(#089981, "Покупатели", inline = "c1", group = GRP_VIS)
+colBear   = input.color(#F23645, "Продавцы", inline = "c1", group = GRP_VIS)
+colVwap   = input.color(#2962FF, "VWAP", inline = "c2", group = GRP_VIS)
+colBand   = input.color(#5C6BC0, "Полосы σ", inline = "c2", group = GRP_VIS)
+
+// ───────────────────────────────── Сессия (якорь) ─────────────────────────────────
+// Якорь должен быть строго больше таймфрейма графика, иначе каждая свеча
+// становилась бы отдельной сессией. В этом случае берём автоматический якорь.
+string anchorAuto = timeframe.isintraday ? "D" : timeframe.isdaily ? "M" : "12M"
+string anchorSel = switch anchorIn
+    "День"   => "D"
+    "Неделя" => "W"
+    "Месяц"  => "M"
+    => anchorAuto
+string anchorTf = timeframe.in_seconds(anchorSel) > timeframe.in_seconds() ? anchorSel : anchorAuto
+
+bool  newSession = timeframe.change(anchorTf)
+float vol        = nz(volume)
+float atr        = ta.atr(14)
+
+// ───────────────────────────────── VWAP и σ-полосы ────────────────────────────────
+// Объёмно-взвешенные среднее и стандартное отклонение с начала сессии.
+var float sumPV  = 0.0
+var float sumV   = 0.0
+var float sumP2V = 0.0
+if newSession
+    sumPV  := 0.0
+    sumV   := 0.0
+    sumP2V := 0.0
+sumPV  += vwapSrc * vol
+sumV   += vol
+sumP2V += vwapSrc * vwapSrc * vol
+
+float vwapLine = sumV > 0 ? sumPV / sumV : vwapSrc
+float sigma    = sumV > 0 ? math.sqrt(math.max(sumP2V / sumV - vwapLine * vwapLine, 0.0)) : 0.0
+float bandUp1  = vwapLine + bandMult1 * sigma
+float bandDn1  = vwapLine - bandMult1 * sigma
+float bandUp2  = vwapLine + bandMult2 * sigma
+float bandDn2  = vwapLine - bandMult2 * sigma
+float bandUp3  = vwapLine + bandMult3 * sigma
+float bandDn3  = vwapLine - bandMult3 * sigma
+float sigmaPos = sigma > 0 ? (close - vwapLine) / sigma : 0.0
+
+// ───────────────────────────────── Отрисовка: VWAP ────────────────────────────────
+// На первом баре сессии линии прерываются, чтобы сессии не склеивались.
+pVwap = plot(showVwap and not newSession ? vwapLine : na, "VWAP", color = colVwap, linewidth = 2, style = plot.style_linebr)
+pUp1  = plot(showBand1 and not newSession ? bandUp1 : na, "VWAP +1σ", color = color.new(colBand, 40), style = plot.style_linebr)
+pDn1  = plot(showBand1 and not newSession ? bandDn1 : na, "VWAP −1σ", color = color.new(colBand, 40), style = plot.style_linebr)
+pUp2  = plot(showBand2 and not newSession ? bandUp2 : na, "VWAP +2σ", color = color.new(colBand, 20), style = plot.style_linebr)
+pDn2  = plot(showBand2 and not newSession ? bandDn2 : na, "VWAP −2σ", color = color.new(colBand, 20), style = plot.style_linebr)
+plot(showBand3 and not newSession ? bandUp3 : na, "VWAP +3σ", color = color.new(colBand, 20), style = plot.style_linebr)
+plot(showBand3 and not newSession ? bandDn3 : na, "VWAP −3σ", color = color.new(colBand, 20), style = plot.style_linebr)
+fill(pUp1, pDn1, color = color.new(colBand, 95), title = "Заливка ±1σ")
+fill(pUp1, pUp2, color = color.new(colBear, 96), title = "Заливка +1σ…+2σ")
+fill(pDn1, pDn2, color = color.new(colBull, 96), title = "Заливка −1σ…−2σ")
