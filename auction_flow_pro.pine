@@ -934,14 +934,17 @@ color  panelFg    = color.new(#D1D4DC, 0)
 var table panel = table.new(panelPosC, 2, 11, bgcolor = panelBg, frame_color = color.new(#787B86, 50), frame_width = 1,
      border_color = color.new(#787B86, 80), border_width = 1)
 
+f_px(float x) =>
+    na(x) ? "—" : str.tostring(x, format.mintick)
+
 f_row(int row, string k, string val, color valCol, string tip) =>
     table.cell(panel, 0, row, k, text_color = color.new(panelFg, 30), text_size = panelTxtSz, text_halign = text.align_left)
     table.cell(panel, 1, row, val, text_color = valCol, text_size = panelTxtSz, text_halign = text.align_right, tooltip = tip)
 
 if showPanel and barstate.islast
-    string method = hasIntra ? "Интрабары " + ltfSel + " · покрытие " + str.tostring(100.0 * barsIntra / math.max(barsTotal, 1), "#") + "%" : "Оценка по свече"
+    string methodTxt = hasIntra ? "Интрабары " + ltfSel + " · покрытие " + str.tostring(100.0 * barsIntra / math.max(barsTotal, 1), "#") + "%" : "Оценка по свече"
     table.cell(panel, 0, 0, "AUCTION FLOW PRO", text_color = panelFg, text_size = panelTxtSz, text_halign = text.align_left)
-    table.cell(panel, 1, 0, method, text_color = color.new(panelFg, 40), text_size = panelTxtSz, text_halign = text.align_right,
+    table.cell(panel, 1, 0, methodTxt, text_color = color.new(panelFg, 40), text_size = panelTxtSz, text_halign = text.align_right,
          tooltip = "Метод расчёта дельты и доля истории, посчитанная по интрабарам. Стакан (DOM) в Pine недоступен: дельта восстанавливается по свечам меньшего ТФ.")
     color stCol = auctionState > 0 ? colBull : auctionState < 0 ? colBear : panelFg
     f_row(1, "Аукцион", f_stateText(auctionState), stCol, "Баланс: торговля внутри вчерашней ценности. Тест: выход без принятия. Дисбаланс: принятие цен за пределами ценности (" + str.tostring(acceptBars) + " закрытий подряд).")
@@ -951,7 +954,7 @@ if showPanel and barstate.islast
     f_row(5, "Дельта бара", f_signed(barDelta, format.volume) + " (" + f_signed(deltaPct * 100, "#") + "%)", barDelta >= 0 ? colBull : colBear, "Агрессивные покупки минус агрессивные продажи на текущем баре.")
     f_row(6, "CVD сессии", f_signed(cvdSes, format.volume), cvdSes >= 0 ? colBull : colBear, "Накопленная дельта с начала сессии.")
     f_row(7, "RVOL", str.tostring(rvol, "#.##") + "x", rvol >= 1.5 ? colPoc : panelFg, "Объём бара относительно среднего в это же время прошлых сессий.")
-    f_row(8, "POC / VAH / VAL пр.", str.tostring(pPoc, format.mintick) + " / " + str.tostring(pVah, format.mintick) + " / " + str.tostring(pVal, format.mintick), colPrevPoc, "Уровни профиля объёма прошлой сессии.")
+    f_row(8, "POC / VAH / VAL пр.", f_px(pPoc) + " / " + f_px(pVah) + " / " + f_px(pVal), colPrevPoc, "Уровни профиля объёма прошлой сессии.")
     string ago = na(lastAtBar) ? "" : " · " + str.tostring(bar_index - lastAtBar) + " б. назад"
     f_row(9, "Сигнал", lastTxt + ago, lastDir > 0 ? colBull : lastDir < 0 ? colBear : panelFg, "Последний сигнал выбранного грейда.")
     string perSetup = ""
