@@ -11,6 +11,7 @@ indicator("Auction Flow Pro — ордерфлоу, профиль, VWAP", short
 // ───────────────────────────────── Настройки ─────────────────────────────────────
 const string GRP_SES  = "1. Сессия"
 const string GRP_VWAP = "2. VWAP"
+const string GRP_OF   = "3. Ордерфлоу"
 const string GRP_VIS  = "9. Цвета"
 
 anchorIn  = input.string("Авто", "Якорь сессии", options = ["Авто", "День", "Неделя", "Месяц"], group = GRP_SES,
@@ -24,6 +25,20 @@ showBand3 = input.bool(false, "±3σ", inline = "vw", group = GRP_VWAP)
 bandMult1 = input.float(1.0, "Множители σ", minval = 0.1, step = 0.1, inline = "bm", group = GRP_VWAP)
 bandMult2 = input.float(2.0, "", minval = 0.1, step = 0.1, inline = "bm", group = GRP_VWAP)
 bandMult3 = input.float(3.0, "", minval = 0.1, step = 0.1, inline = "bm", group = GRP_VWAP)
+
+deltaMethod = input.string("Интрабары", "Метод дельты", options = ["Интрабары", "Оценка по свече"], group = GRP_OF,
+     tooltip = "Интрабары: каждая свеча меньшего ТФ относится к покупкам или продажам по правилу тика (точнее). Оценка по свече: объём делится по положению закрытия внутри свечи (грубее, но работает везде).")
+ltfIn     = input.string("Авто", "Интрабарный ТФ", options = ["Авто", "1S", "5S", "15S", "1", "3", "5", "15", "60"], group = GRP_OF,
+     tooltip = "Авто: 1 мин для графиков до 1 часа, 5 мин до 4 часов, 1 час для дневного. Секундные ТФ требуют тарифа TradingView с секундными данными.")
+rvolSes   = input.int(20, "RVOL: сессий в среднем", minval = 2, maxval = 200, group = GRP_OF,
+     tooltip = "Объём бара сравнивается со средним объёмом в это же время сессии за последние N сессий.")
+absRvol   = input.float(1.5, "Поглощение: мин. RVOL", minval = 0.5, step = 0.1, group = GRP_OF)
+absDelta  = input.float(0.20, "Поглощение: мин. |дельта %|", minval = 0.05, maxval = 0.9, step = 0.05, group = GRP_OF,
+     tooltip = "Доля агрессивной дельты против направления закрытия свечи (0.20 = 20% объёма бара).")
+effRvol   = input.float(2.0, "Усилие без результата: мин. RVOL", minval = 1.0, step = 0.1, group = GRP_OF)
+effRange  = input.float(0.7, "Усилие без результата: макс. диапазон (ATR)", minval = 0.1, step = 0.1, group = GRP_OF)
+divLen    = input.int(20, "Дивергенция CVD: окно (баров)", minval = 5, group = GRP_OF)
+colorBars = input.bool(false, "Красить свечи по дельте", group = GRP_OF)
 
 colBull   = input.color(#089981, "Покупатели", inline = "c1", group = GRP_VIS)
 colBear   = input.color(#F23645, "Продавцы", inline = "c1", group = GRP_VIS)
@@ -68,6 +83,102 @@ float bandUp3  = vwapLine + bandMult3 * sigma
 float bandDn3  = vwapLine - bandMult3 * sigma
 float sigmaPos = sigma > 0 ? (close - vwapLine) / sigma : 0.0
 
+// ───────────────────────────────── Ордерфлоу: дельта ──────────────────────────────
+// Стакан (DOM) и потиковые сделки в Pine недоступны, поэтому агрессивные покупки
+// и продажи восстанавливаются по свечам меньшего таймфрейма (правило тика).
+int    chartSec = timeframe.in_seconds()
+string ltfAuto  = timeframe.isseconds ? "1S" : chartSec <= 60 ? "" : chartSec <= 3600 ? "1" : chartSec <= 14400 ? "5" : timeframe.isdaily ? "60" : "240"
+string ltfSel   = ltfIn == "Авто" ? ltfAuto : ltfIn
+bool   useLtf   = deltaMethod == "Интрабары" and ltfSel != "" and timeframe.in_seconds(ltfSel) < chartSec
+// Когда интрабары не нужны, запрашиваем ТФ графика: запрос остаётся валидным, а данные не используются.
+string ltfReq   = useLtf ? ltfSel : timeframe.period
+
+[ltfO, ltfH, ltfL, ltfC, ltfV] = request.security_lower_tf(syminfo.tickerid, ltfReq, [open, high, low, close, volume], ignore_invalid_timeframe = true)
+
+int  nIntra   = useLtf ? ltfV.size() : 0
+bool hasIntra = nIntra > 0
+
+// Направление каждого интрабара (+1 покупка, −1 продажа) нужно и профилю объёма.
+array<int> intraDir = array.new<int>()
+var float lastIntraC   = na
+var int   lastIntraDir = 1
+float buyVol  = 0.0
+float sellVol = 0.0
+if hasIntra
+    for i = 0 to nIntra - 1
+        float c = ltfC.get(i)
+        float o = ltfO.get(i)
+        float v = nz(ltfV.get(i))
+        int dir = c > o ? 1 : c < o ? -1 : na(lastIntraC) ? lastIntraDir : c > lastIntraC ? 1 : c < lastIntraC ? -1 : lastIntraDir
+        intraDir.push(dir)
+        if dir > 0
+            buyVol += v
+        else
+            sellVol += v
+        lastIntraC   := c
+        lastIntraDir := dir
+else
+    // Запасной метод: доля покупок = положение закрытия внутри диапазона свечи.
+    float rng0 = high - low
+    buyVol  := rng0 > 0 ? vol * (close - low) / rng0 : vol * 0.5
+    sellVol := vol - buyVol
+
+float barDelta = buyVol - sellVol
+float flowVol  = buyVol + sellVol
+float deltaPct = flowVol > 0 ? barDelta / flowVol : 0.0
+float clv      = high > low ? (close - low) / (high - low) : 0.5
+
+// CVD сессии (для панели и контекста) и непрерывный CVD (для дивергенций).
+var float cvdSes  = 0.0
+var float cvdCont = 0.0
+if newSession
+    cvdSes := 0.0
+cvdSes  += barDelta
+cvdCont += barDelta
+
+// Покрытие истории интрабарными данными.
+var int barsTotal = 0
+var int barsIntra = 0
+barsTotal += 1
+barsIntra += hasIntra ? 1 : 0
+
+// ───────────────────────────────── Ордерфлоу: RVOL по времени ──────────────────────
+// Средний объём хранится отдельно для каждого номера бара внутри сессии, поэтому
+// всплеск на открытии рынка сравнивается с открытиями прошлых сессий.
+var int barNo = 0
+barNo := newSession ? 0 : barNo + 1
+
+var map<int, float> todAvg = map.new<int, float>()
+var map<int, int>   todCnt = map.new<int, int>()
+float volSma  = ta.sma(vol, 20)
+float todBase = todAvg.get(barNo)
+int   todN    = nz(todCnt.get(barNo))
+float volBase = todN >= 3 ? todBase : volSma
+float rvol    = volBase > 0 ? vol / volBase : 1.0
+// Коллекции меняем только на закрытом баре: так тики реального времени не копятся.
+if barstate.isconfirmed
+    float alphaTod = 2.0 / (rvolSes + 1)
+    todAvg.put(barNo, na(todBase) ? vol : todBase + alphaTod * (vol - todBase))
+    todCnt.put(barNo, todN + 1)
+
+// ───────────────────────────────── Ордерфлоу: поглощение и дивергенции ─────────────
+// Дельта против цены: агрессор давит, а цена закрывается в обратную сторону.
+bool absDeltaBull = hasIntra and rvol >= absRvol and deltaPct <= -absDelta and clv >= 0.5
+bool absDeltaBear = hasIntra and rvol >= absRvol and deltaPct >= absDelta and clv <= 0.5
+// Усилие без результата: огромный объём, а цена почти стоит. Направление задаёт уровень.
+bool effortNoResult = rvol >= effRvol and (high - low) <= effRange * atr
+
+float priorHigh = ta.highest(high, divLen)[1]
+float priorLow  = ta.lowest(low, divLen)[1]
+float cvdHigh   = ta.highest(cvdCont, divLen)[1]
+float cvdLow    = ta.lowest(cvdCont, divLen)[1]
+bool  bearDiv   = high > priorHigh and cvdCont < cvdHigh
+bool  bullDiv   = low < priorLow and cvdCont > cvdLow
+int   sinceBearDiv = ta.barssince(bearDiv)
+int   sinceBullDiv = ta.barssince(bullDiv)
+bool  bearDivRecent = not na(sinceBearDiv) and sinceBearDiv <= 5
+bool  bullDivRecent = not na(sinceBullDiv) and sinceBullDiv <= 5
+
 // ───────────────────────────────── Отрисовка: VWAP ────────────────────────────────
 // На первом баре сессии линии прерываются, чтобы сессии не склеивались.
 pVwap = plot(showVwap and not newSession ? vwapLine : na, "VWAP", color = colVwap, linewidth = 2, style = plot.style_linebr)
@@ -80,3 +191,10 @@ plot(showBand3 and not newSession ? bandDn3 : na, "VWAP −3σ", color = color.n
 fill(pUp1, pDn1, color = color.new(colBand, 95), title = "Заливка ±1σ")
 fill(pUp1, pUp2, color = color.new(colBear, 96), title = "Заливка +1σ…+2σ")
 fill(pDn1, pDn2, color = color.new(colBull, 96), title = "Заливка −1σ…−2σ")
+
+// ───────────────────────────────── Отрисовка: ордерфлоу ───────────────────────────
+barcolor(colorBars ? color.from_gradient(deltaPct, -0.6, 0.6, colBear, colBull) : na, title = "Свечи по дельте")
+plot(barDelta, "Дельта бара", display = display.data_window)
+plot(deltaPct * 100, "Дельта бара, %", display = display.data_window)
+plot(cvdSes, "CVD сессии", display = display.data_window)
+plot(rvol, "RVOL", display = display.data_window)
