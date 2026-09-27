@@ -15,6 +15,7 @@ const string GRP_OF   = "3. Ордерфлоу"
 const string GRP_VP   = "4. Профиль объёма"
 const string GRP_AU   = "5. Аукцион"
 const string GRP_SIG  = "6. Сигналы"
+const string GRP_OUT  = "7. Отображение и статистика"
 const string GRP_VIS  = "9. Цвета"
 
 anchorIn  = input.string("Авто", "Якорь сессии", options = ["Авто", "День", "Неделя", "Месяц"], group = GRP_SES,
@@ -75,6 +76,17 @@ stopBuf     = input.float(0.10, "Буфер стопа (ATR)", minval = 0.0, ste
 minRisk     = input.float(0.30, "Минимальный риск (ATR)", minval = 0.05, step = 0.05, group = GRP_SIG)
 maxRisk     = input.float(2.5, "Максимальный риск (ATR)", minval = 0.5, step = 0.1, group = GRP_SIG)
 cooldown    = input.int(3, "Пауза после сигнала (баров)", minval = 0, group = GRP_SIG)
+
+showSignals = input.bool(true, "Метки сигналов", group = GRP_OUT)
+tradeLines  = input.string("Последний", "Линии входа, стопа и целей", options = ["Нет", "Последний", "Все"], group = GRP_OUT)
+lineLen     = input.int(20, "Длина линий сделки (баров)", minval = 5, maxval = 200, group = GRP_OUT)
+showAbsMark = input.bool(true, "Маркеры поглощения ◆", group = GRP_OUT)
+showDivMark = input.bool(false, "Маркеры дивергенции CVD ▲▼", group = GRP_OUT)
+showPanel   = input.bool(true, "Панель", inline = "pn", group = GRP_OUT)
+panelPos    = input.string("Справа сверху", "", options = ["Справа сверху", "Справа снизу", "Слева сверху", "Слева снизу"], inline = "pn", group = GRP_OUT)
+panelSize   = input.string("Мелкий", "Шрифт панели", options = ["Крошечный", "Мелкий", "Обычный"], group = GRP_OUT)
+maxHold     = input.int(48, "Трекер: макс. удержание сделки (баров)", minval = 5, maxval = 1000, group = GRP_OUT,
+     tooltip = "Трекер ведёт каждый сигнал: половина позиции закрывается на цели 1 со стопом в безубыток, остаток на цели 2. Если сделка не закрылась за N баров, остаток выходит по рынку.")
 
 colBull   = input.color(#089981, "Покупатели", inline = "c1", group = GRP_VIS)
 colBear   = input.color(#F23645, "Продавцы", inline = "c1", group = GRP_VIS)
@@ -701,6 +713,110 @@ if barstate.isconfirmed
                 sigT2      := t2
                 lastSigBar := bar_index
 
+// ───────────────────────────────── Трекер результатов ─────────────────────────────
+// Каждый сигнал ведётся до выхода (docs/SPEC.md, раздел 9), чтобы на панели была
+// честная статистика на загруженной истории.
+var array<int>    trDir   = array.new<int>()
+var array<float>  trEntry = array.new<float>()
+var array<float>  trStop  = array.new<float>()
+var array<float>  trRisk  = array.new<float>()
+var array<float>  trT1    = array.new<float>()
+var array<float>  trT2    = array.new<float>()
+var array<int>    trBar   = array.new<int>()
+var array<bool>   trHit1  = array.new<bool>()
+var array<string> trName  = array.new<string>()
+var int   stTrades = 0
+var int   stHit1   = 0
+var int   stHit2   = 0
+var float stSumR   = 0.0
+var map<string, int>   ssN = map.new<string, int>()
+var map<string, int>   ssW = map.new<string, int>()
+var map<string, float> ssR = map.new<string, float>()
+
+if barstate.isconfirmed
+    int nTr = trDir.size()
+    if nTr > 0
+        for q = nTr - 1 to 0
+            int   td    = trDir.get(q)
+            float ten   = trEntry.get(q)
+            float tsp   = trStop.get(q)
+            float trk   = trRisk.get(q)
+            float tp1   = trT1.get(q)
+            float tp2   = trT2.get(q)
+            bool  th1   = trHit1.get(q)
+            float r1    = math.abs(tp1 - ten) / trk
+            float r2    = math.abs(tp2 - ten) / trk
+            bool  hStop = td > 0 ? low <= tsp : high >= tsp
+            bool  hT1   = td > 0 ? high >= tp1 : low <= tp1
+            bool  hT2   = td > 0 ? high >= tp2 : low <= tp2
+            bool  gotT1 = th1
+            bool  gotT2 = false
+            bool  done  = false
+            float resR  = 0.0
+            if not th1
+                // Стоп и цель в одном баре: засчитываем стоп (консервативно).
+                if hStop
+                    done := true
+                    resR := -1.0
+                else if hT1
+                    gotT1 := true
+                    if hT2
+                        gotT2 := true
+                        done  := true
+                        resR  := 0.5 * r1 + 0.5 * r2
+                    else
+                        trHit1.set(q, true)
+                        trStop.set(q, ten)
+            else
+                if hStop
+                    done := true
+                    resR := 0.5 * r1
+                else if hT2
+                    gotT2 := true
+                    done  := true
+                    resR  := 0.5 * r1 + 0.5 * r2
+            if not done and bar_index - trBar.get(q) >= maxHold
+                float rNow = (close - ten) * td / trk
+                done := true
+                resR := gotT1 ? 0.5 * r1 + 0.5 * rNow : rNow
+            if done
+                string tn = trName.get(q)
+                stTrades += 1
+                stHit1   += gotT1 ? 1 : 0
+                stHit2   += gotT2 ? 1 : 0
+                stSumR   += resR
+                ssN.put(tn, nz(ssN.get(tn)) + 1)
+                ssW.put(tn, nz(ssW.get(tn)) + (gotT1 ? 1 : 0))
+                ssR.put(tn, nz(ssR.get(tn)) + resR)
+                trDir.remove(q)
+                trEntry.remove(q)
+                trStop.remove(q)
+                trRisk.remove(q)
+                trT1.remove(q)
+                trT2.remove(q)
+                trBar.remove(q)
+                trHit1.remove(q)
+                trName.remove(q)
+    if sigFire
+        trDir.push(sigDir)
+        trEntry.push(sigEntry)
+        trStop.push(sigStop)
+        trRisk.push(math.abs(sigEntry - sigStop))
+        trT1.push(sigT1)
+        trT2.push(sigT2)
+        trBar.push(bar_index)
+        trHit1.push(false)
+        trName.push(sigName)
+
+// Последний сигнал для панели.
+var int    lastDir   = 0
+var string lastTxt   = "—"
+var int    lastAtBar = na
+if sigFire
+    lastDir   := sigDir
+    lastTxt   := (sigDir > 0 ? "▲ LONG " : "▼ SHORT ") + f_grade(sigPts) + " · " + sigName
+    lastAtBar := bar_index
+
 // ───────────────────────────────── Отрисовка: VWAP ────────────────────────────────
 // На первом баре сессии линии прерываются, чтобы сессии не склеивались.
 pVwap = plot(showVwap and not newSession ? vwapLine : na, "VWAP", color = colVwap, linewidth = 2, style = plot.style_linebr)
@@ -764,3 +880,93 @@ if showHist and barstate.islast and not na(vpPoc) and not na(binSize)
 
 // ───────────────────────────────── Отрисовка: аукцион ─────────────────────────────
 bgcolor(showStateBg ? (auctionState == 2 ? color.new(colBull, 92) : auctionState == -2 ? color.new(colBear, 92) : na) : na, title = "Фон состояния аукциона")
+
+// ───────────────────────────────── Отрисовка: сигналы ─────────────────────────────
+f_signed(float x, string fmt) =>
+    (x >= 0 ? "+" : "") + str.tostring(x, fmt)
+
+var array<line> tradeLn = array.new<line>()
+if sigFire
+    float  riskPx   = math.abs(sigEntry - sigStop)
+    string gradeTxt = f_grade(sigPts)
+    if showSignals
+        string tip = sigName + " · грейд " + gradeTxt + " (" + str.tostring(sigPts) + " б.)\n" +
+             "Уровень: " + (sigLevel == "" ? "—" : sigLevel) + "\n" +
+             "Вход: " + str.tostring(sigEntry, format.mintick) + "\n" +
+             "Стоп: " + str.tostring(sigStop, format.mintick) + "\n" +
+             "Цель 1: " + str.tostring(sigT1, format.mintick) + " (" + str.tostring(math.abs(sigT1 - sigEntry) / riskPx, "#.#") + "R)\n" +
+             "Цель 2: " + str.tostring(sigT2, format.mintick) + " (" + str.tostring(math.abs(sigT2 - sigEntry) / riskPx, "#.#") + "R)\n\n" +
+             sigWhy
+        color  lblCol = color.new(sigDir > 0 ? colBull : colBear, sigPts >= 5 ? 0 : sigPts >= 4 ? 15 : 35)
+        label.new(bar_index, sigDir > 0 ? low : high, (sigDir > 0 ? "▲ LONG " : "▼ SHORT ") + gradeTxt + "\n" + sigName,
+             yloc = sigDir > 0 ? yloc.belowbar : yloc.abovebar, style = sigDir > 0 ? label.style_label_up : label.style_label_down,
+             color = lblCol, textcolor = color.white, size = size.small, tooltip = tip)
+    if tradeLines != "Нет"
+        if tradeLines == "Последний"
+            for ln in tradeLn
+                ln.delete()
+            tradeLn.clear()
+        int xEnd = bar_index + lineLen
+        tradeLn.push(line.new(bar_index, sigEntry, xEnd, sigEntry, color = color.gray, width = 1))
+        tradeLn.push(line.new(bar_index, sigStop, xEnd, sigStop, color = colBear, style = line.style_dashed, width = 1))
+        tradeLn.push(line.new(bar_index, sigT1, xEnd, sigT1, color = colBull, style = line.style_dashed, width = 1))
+        tradeLn.push(line.new(bar_index, sigT2, xEnd, sigT2, color = colBull, style = line.style_dotted, width = 1))
+        // Не больше 400 линий сделок, чтобы TradingView не удалял линии «голых» POC.
+        while tradeLn.size() > 400
+            line.delete(tradeLn.shift())
+
+plotshape(showAbsMark and absBull and barstate.isconfirmed, "Поглощение продаж", shape.diamond, location.belowbar, color.new(colBull, 20), size = size.tiny)
+plotshape(showAbsMark and absBear and barstate.isconfirmed, "Поглощение покупок", shape.diamond, location.abovebar, color.new(colBear, 20), size = size.tiny)
+plotshape(showDivMark and bullDiv and barstate.isconfirmed, "Бычья дивергенция CVD", shape.triangleup, location.belowbar, color.new(colBull, 50), size = size.tiny)
+plotshape(showDivMark and bearDiv and barstate.isconfirmed, "Медвежья дивергенция CVD", shape.triangledown, location.abovebar, color.new(colBear, 50), size = size.tiny)
+plot(sigFire ? sigDir : 0, "Сигнал (1 лонг, −1 шорт)", display = display.data_window)
+
+// ───────────────────────────────── Панель ─────────────────────────────────────────
+string panelPosC = switch panelPos
+    "Справа снизу" => position.bottom_right
+    "Слева сверху" => position.top_left
+    "Слева снизу"  => position.bottom_left
+    => position.top_right
+string panelTxtSz = panelSize == "Крошечный" ? size.tiny : panelSize == "Обычный" ? size.normal : size.small
+color  panelBg    = color.new(#131722, 15)
+color  panelFg    = color.new(#D1D4DC, 0)
+
+var table panel = table.new(panelPosC, 2, 11, bgcolor = panelBg, frame_color = color.new(#787B86, 50), frame_width = 1,
+     border_color = color.new(#787B86, 80), border_width = 1)
+
+f_row(int row, string k, string val, color valCol, string tip) =>
+    table.cell(panel, 0, row, k, text_color = color.new(panelFg, 30), text_size = panelTxtSz, text_halign = text.align_left)
+    table.cell(panel, 1, row, val, text_color = valCol, text_size = panelTxtSz, text_halign = text.align_right, tooltip = tip)
+
+if showPanel and barstate.islast
+    string method = hasIntra ? "Интрабары " + ltfSel + " · покрытие " + str.tostring(100.0 * barsIntra / math.max(barsTotal, 1), "#") + "%" : "Оценка по свече"
+    table.cell(panel, 0, 0, "AUCTION FLOW PRO", text_color = panelFg, text_size = panelTxtSz, text_halign = text.align_left)
+    table.cell(panel, 1, 0, method, text_color = color.new(panelFg, 40), text_size = panelTxtSz, text_halign = text.align_right,
+         tooltip = "Метод расчёта дельты и доля истории, посчитанная по интрабарам. Стакан (DOM) в Pine недоступен: дельта восстанавливается по свечам меньшего ТФ.")
+    color stCol = auctionState > 0 ? colBull : auctionState < 0 ? colBear : panelFg
+    f_row(1, "Аукцион", f_stateText(auctionState), stCol, "Баланс: торговля внутри вчерашней ценности. Тест: выход без принятия. Дисбаланс: принятие цен за пределами ценности (" + str.tostring(acceptBars) + " закрытий подряд).")
+    f_row(2, "Открытие", f_openText(openLoc), panelFg, "Где открылась сессия относительно Value Area прошлой сессии.")
+    f_row(3, "Ценность", f_migText(valueMig), valueMig > 0 ? colBull : valueMig < 0 ? colBear : panelFg, "Куда смещается developing POC относительно прошлой Value Area.")
+    f_row(4, "VWAP", f_signed(sigmaPos, "#.##") + "σ", sigmaPos >= 0 ? colBull : colBear, "Положение цены относительно VWAP сессии в стандартных отклонениях.")
+    f_row(5, "Дельта бара", f_signed(barDelta, format.volume) + " (" + f_signed(deltaPct * 100, "#") + "%)", barDelta >= 0 ? colBull : colBear, "Агрессивные покупки минус агрессивные продажи на текущем баре.")
+    f_row(6, "CVD сессии", f_signed(cvdSes, format.volume), cvdSes >= 0 ? colBull : colBear, "Накопленная дельта с начала сессии.")
+    f_row(7, "RVOL", str.tostring(rvol, "#.##") + "x", rvol >= 1.5 ? colPoc : panelFg, "Объём бара относительно среднего в это же время прошлых сессий.")
+    f_row(8, "POC / VAH / VAL пр.", str.tostring(pPoc, format.mintick) + " / " + str.tostring(pVah, format.mintick) + " / " + str.tostring(pVal, format.mintick), colPrevPoc, "Уровни профиля объёма прошлой сессии.")
+    string ago = na(lastAtBar) ? "" : " · " + str.tostring(bar_index - lastAtBar) + " б. назад"
+    f_row(9, "Сигнал", lastTxt + ago, lastDir > 0 ? colBull : lastDir < 0 ? colBear : panelFg, "Последний сигнал выбранного грейда.")
+    string perSetup = ""
+    for nm in ssN.keys()
+        int cntS = ssN.get(nm)
+        perSetup += nm + ": " + str.tostring(cntS) + " сд., T1 " + str.tostring(100.0 * nz(ssW.get(nm)) / cntS, "#") + "%, " + f_signed(nz(ssR.get(nm)) / cntS, "#.##") + "R\n"
+    string statTxt = stTrades == 0 ? "нет закрытых сделок" : str.tostring(stTrades) + " сд. · T1 " + str.tostring(100.0 * stHit1 / stTrades, "#") + "% · T2 " + str.tostring(100.0 * stHit2 / stTrades, "#") + "% · " + f_signed(stSumR / stTrades, "#.##") + "R"
+    f_row(10, "Статистика", statTxt, stTrades == 0 ? panelFg : stSumR >= 0 ? colBull : colBear,
+         "Результаты сигналов на загруженной истории: доля дошедших до цели 1 и цели 2 и средний результат в R.\n" + perSetup)
+
+// ───────────────────────────────── Алерты ─────────────────────────────────────────
+alertcondition(sigFire and sigDir > 0, "AFP: сигнал LONG", "AFP LONG {{ticker}} {{interval}} по {{close}}")
+alertcondition(sigFire and sigDir < 0, "AFP: сигнал SHORT", "AFP SHORT {{ticker}} {{interval}} по {{close}}")
+alertcondition(sigFire, "AFP: любой сигнал", "AFP сигнал {{ticker}} {{interval}} по {{close}}")
+if sigFire
+    alert("AFP " + (sigDir > 0 ? "LONG " : "SHORT ") + f_grade(sigPts) + " · " + sigName + " · " + syminfo.ticker + " " + timeframe.period +
+         " · вход " + str.tostring(sigEntry, format.mintick) + " · стоп " + str.tostring(sigStop, format.mintick) +
+         " · T1 " + str.tostring(sigT1, format.mintick) + " · T2 " + str.tostring(sigT2, format.mintick), alert.freq_once_per_bar_close)
