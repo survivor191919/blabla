@@ -1,0 +1,79 @@
+//@version=6
+// Ракета или Дно — шуточный индикатор сигналов для TradingView.
+// Это НЕ финансовый совет. Индикатор сделан для фана.
+indicator("Ракета или Дно 🚀💀", overlay = true, max_labels_count = 500)
+
+// ───────────── Настройки ─────────────
+fastLen   = input.int(9,    "Быстрая EMA",           minval = 1,   group = "Тренд")
+slowLen   = input.int(21,   "Медленная EMA",         minval = 1,   group = "Тренд")
+trendLen  = input.int(200,  "Трендовая EMA",         minval = 1,   group = "Тренд")
+useTrend  = input.bool(true, "Фильтр по трендовой EMA",            group = "Тренд")
+rsiLen    = input.int(14,   "Период RSI",            minval = 2,   group = "RSI")
+rsiOB     = input.int(70,   "Перекупленность",       minval = 50,  maxval = 100, group = "RSI")
+rsiOS     = input.int(30,   "Перепроданность",       minval = 0,   maxval = 50,  group = "RSI")
+whaleMult = input.float(3.0, "Объём кита (x к среднему)", minval = 1.0, step = 0.5, group = "Киты")
+showEmas  = input.bool(true, "Показывать EMA",                      group = "Вид")
+showMemes = input.bool(true, "Показывать мем-метки (🔥 🧊 🐋)",     group = "Вид")
+showMood  = input.bool(true, "Показывать панель настроения",       group = "Вид")
+
+// ───────────── Расчёты ─────────────
+fast   = ta.ema(close, fastLen)
+slow   = ta.ema(close, slowLen)
+trend  = ta.ema(close, trendLen)
+rsi    = ta.rsi(close, rsiLen)
+atr    = ta.atr(14)
+volAvg = ta.sma(nz(volume), 20)
+
+crossUp = ta.crossover(fast, slow)
+crossDn = ta.crossunder(fast, slow)
+
+buySignal  = crossUp and rsi < rsiOB and (not useTrend or close > trend)
+sellSignal = crossDn and rsi > rsiOS and (not useTrend or close < trend)
+
+overheat = ta.crossover(rsi, rsiOB)
+freeze   = ta.crossunder(rsi, rsiOS)
+whale    = volAvg > 0 and nz(volume) > volAvg * whaleMult and math.abs(close - open) > atr
+
+// Настроение рынка от 0 до 100: половина из RSI, остальное из положения цены и EMA
+mood = rsi * 0.5 + (close > trend ? 25 : 0) + (fast > slow ? 25 : 0)
+
+// ───────────── Фразочки ─────────────
+var buyPhrases  = array.from("На Луну!", "Заправляем ракету", "HODL, братан", "Быки проснулись", "Время лямбы", "To the moon!")
+var sellPhrases = array.from("Пристегнитесь", "Медведи в здании", "Ищем дно", "Это была коррекция?", "Продал почку зря", "GG WP")
+
+pick(arr) =>
+    array.get(arr, bar_index % array.size(arr))
+
+// ───────────── Отрисовка ─────────────
+plot(showEmas ? fast  : na, "Быстрая EMA",   color = color.new(color.aqua, 0),   linewidth = 1)
+plot(showEmas ? slow  : na, "Медленная EMA", color = color.new(color.orange, 0), linewidth = 1)
+plot(showEmas ? trend : na, "Трендовая EMA", color = color.new(color.gray, 30),  linewidth = 2)
+
+if buySignal
+    label.new(bar_index, low, "🚀 ПОКУПАЙ\n" + pick(buyPhrases), yloc = yloc.belowbar,
+         style = label.style_label_up, color = color.new(color.green, 0), textcolor = color.white, size = size.normal)
+
+if sellSignal
+    label.new(bar_index, high, "💀 ПРОДАВАЙ\n" + pick(sellPhrases), yloc = yloc.abovebar,
+         style = label.style_label_down, color = color.new(color.red, 0), textcolor = color.white, size = size.normal)
+
+plotshape(showMemes and overheat, "Перегрев", shape.labeldown, location.abovebar, color.new(color.orange, 20), text = "🔥", textcolor = color.white, size = size.tiny)
+plotshape(showMemes and freeze,   "Заморозка", shape.labelup,  location.belowbar, color.new(color.blue, 20),   text = "🧊", textcolor = color.white, size = size.tiny)
+plotshape(showMemes and whale,    "Кит",       shape.circle,   location.abovebar, color.new(color.purple, 0),  text = "🐋", textcolor = color.purple, size = size.small)
+
+bgcolor(buySignal ? color.new(color.green, 85) : sellSignal ? color.new(color.red, 85) : na)
+
+// Панель настроения
+var table moodTable = table.new(position.top_right, 1, 3, border_width = 1)
+if showMood and barstate.islast
+    moodText  = mood < 20 ? "😱 ПАНИКА" : mood < 40 ? "😰 Страшновато" : mood < 60 ? "😐 Непонятно" : mood < 80 ? "😎 Уверенность" : "🤑 ЖАДНОСТЬ"
+    moodColor = color.from_gradient(mood, 0, 100, color.red, color.green)
+    table.cell(moodTable, 0, 0, "Настроение рынка", text_color = color.white, bgcolor = color.new(color.black, 20))
+    table.cell(moodTable, 0, 1, moodText, text_color = color.white, bgcolor = moodColor, text_size = size.large)
+    table.cell(moodTable, 0, 2, "Индекс: " + str.tostring(mood, "#") + "/100  RSI: " + str.tostring(rsi, "#.0"),
+         text_color = color.white, bgcolor = color.new(color.black, 20), text_size = size.small)
+
+// ───────────── Алерты ─────────────
+alertcondition(buySignal,  "🚀 Ракета",  "Ракета или Дно: сигнал на покупку по {{ticker}} @ {{close}}")
+alertcondition(sellSignal, "💀 Дно",     "Ракета или Дно: сигнал на продажу по {{ticker}} @ {{close}}")
+alertcondition(whale,      "🐋 Кит",     "Ракета или Дно: кит зашёл в {{ticker}} с огромным объёмом")
