@@ -1,0 +1,184 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CRT Ranges — разметка старших свечей (4H / D) по концепции CRT
+//  Только разметка, без сигналов: вертикальные границы, максимум, минимум, 50%
+//  и открытие каждой старшей свечи, плюс диапазон прошлой свечи на текущей.
+// ═══════════════════════════════════════════════════════════════════════════════
+indicator("CRT Ranges — границы свечей 4H / D", shorttitle = "CRT Ranges", overlay = true,
+     max_lines_count = 500, max_labels_count = 500)
+
+// ───────────────────────────────── Настройки ─────────────────────────────────────
+const string G1 = "Свечи 1"
+const string G2 = "Свечи 2"
+const string GD = "Что размечать"
+const string GS = "Стиль"
+const string GT = "Время"
+
+on1   = input.bool(true, "", inline = "l1", group = G1)
+tf1   = input.timeframe("240", "", inline = "l1", group = G1)
+col1  = input.color(#9598A173, "", inline = "l1", group = G1)
+keep1 = input.int(30, "Сколько свечей размечать", minval = 1, maxval = 45, group = G1)
+
+on2   = input.bool(true, "", inline = "l2", group = G2)
+tf2   = input.timeframe("D", "", inline = "l2", group = G2)
+col2  = input.color(#5B9CF68C, "", inline = "l2", group = G2)
+keep2 = input.int(15, "Сколько свечей размечать", minval = 1, maxval = 45, group = G2)
+
+showSep  = input.bool(true, "Вертикальные границы", group = GD)
+showHL   = input.bool(true, "Максимум и минимум", group = GD)
+showMid  = input.bool(true, "50% диапазона", group = GD)
+showOpen = input.bool(false, "Цена открытия", group = GD)
+showExt  = input.bool(true, "Диапазон прошлой свечи на текущей", group = GD,
+     tooltip = "Максимум, минимум и 50% последней закрытой свечи продлеваются до конца текущей. Это основной диапазон CRT: видно, какую сторону снимает текущая свеча.")
+showTags = input.bool(false, "Подписи уровней прошлой свечи", group = GD)
+showTime = input.bool(false, "Время открытия свечи", group = GD)
+
+sepStyleIn = input.string("Точки", "Границы", options = ["Точки", "Штрихи", "Сплошная"], group = GS)
+rngStyleIn = input.string("Точки", "Диапазон", options = ["Точки", "Штрихи", "Сплошная"], group = GS)
+lineWidth  = input.int(1, "Толщина", minval = 1, maxval = 4, group = GS)
+
+alignIn = input.string("Как на бирже", "Начало свечей", options = ["Как на бирже", "Нью-Йорк 17:00 (CRT)", "Нью-Йорк 00:00"], group = GT,
+     tooltip = "Как на бирже: границы совпадают со свечами TradingView этого инструмента. Нью-Йорк 17:00: 4H начинаются в 17, 21, 01, 05, 09, 13 по Нью-Йорку, дневная в 17:00 (как в CRT и на форексе). Нью-Йорк 00:00: 4H в 00, 04, 08 и т. д., дневная в полночь. Недельные и месячные свечи всегда как на бирже.")
+
+// ───────────────────────────────── Время свечей ──────────────────────────────────
+const string NY = "America/New_York"
+
+f_style(string s) =>
+    s == "Штрихи" ? line.style_dashed : s == "Сплошная" ? line.style_solid : line.style_dotted
+
+string sepStyle = f_style(sepStyleIn)
+string rngStyle = f_style(rngStyleIn)
+
+// Часы Нью-Йорка, записанные как UTC: так сутки удобно резать на равные блоки.
+f_nyWall(int t) =>
+    timestamp("UTC", year(t, NY), month(t, NY), dayofmonth(t, NY), hour(t, NY), minute(t, NY), second(t, NY))
+
+// Обратный перевод: «часы Нью-Йорка» → настоящее время с учётом перехода на летнее/зимнее время.
+f_fromNyWall(int w) =>
+    timestamp(NY, year(w, "UTC"), month(w, "UTC"), dayofmonth(w, "UTC"), hour(w, "UTC"), minute(w, "UTC"), second(w, "UTC"))
+
+// Начало и конец старшей свечи, в которую попадает текущий бар.
+f_bounds(string tf) =>
+    int  periodMs = timeframe.in_seconds(tf) * 1000
+    int  exT0     = time(tf)
+    int  exT1     = time_close(tf)
+    int  t0       = exT0
+    int  t1       = na(exT1) ? exT0 + periodMs : exT1
+    if alignIn != "Как на бирже" and periodMs <= 86400000
+        int anchor  = alignIn == "Нью-Йорк 00:00" ? 0 : 17 * 3600000
+        int shifted = f_nyWall(time) - anchor
+        int wStart  = math.floor(shifted * 1.0 / periodMs) * periodMs + anchor
+        t0 := f_fromNyWall(wStart)
+        t1 := f_fromNyWall(wStart + periodMs)
+    [t0, t1]
+
+f_tfName(string tf) =>
+    int s = timeframe.in_seconds(tf)
+    s >= 2419200 ? "M" : s >= 604800 ? "W" : s >= 86400 ? (s == 86400 ? "D" : str.tostring(math.round(s / 86400.0)) + "D") : s >= 3600 ? str.tostring(math.round(s / 3600.0)) + "H" : str.tostring(math.round(s / 60.0)) + "m"
+
+f_timeText(int t, string tf) =>
+    string tz = alignIn == "Как на бирже" ? syminfo.timezone : NY
+    timeframe.in_seconds(tf) < 86400 ? str.format_time(t, "HH:mm", tz) : str.format_time(t, "dd.MM", tz)
+
+// ───────────────────────────────── Разметка ──────────────────────────────────────
+// Одна старшая свеча и её линии.
+type Candle
+    int   t0
+    int   t1
+    float h
+    float l
+    line  sep
+    line  hi
+    line  lo
+    line  mid
+    line  op
+    label tm
+
+method erase(Candle c) =>
+    line.delete(c.sep)
+    line.delete(c.hi)
+    line.delete(c.lo)
+    line.delete(c.mid)
+    line.delete(c.op)
+    label.delete(c.tm)
+
+f_setY(line ln, float y) =>
+    if not na(ln)
+        ln.set_y1(y)
+        ln.set_y2(y)
+
+// Слой разметки для одного таймфрейма. У каждого вызова своё состояние (var).
+f_layer(bool active, string tf, color col, int keep, int t0, int t1, int dupT0) =>
+    var array<Candle> hist = array.new<Candle>()
+    var Candle cur    = na
+    var line   extHi  = na
+    var line   extLo  = na
+    var line   extMid = na
+    var label  tagHi  = na
+    var label  tagLo  = na
+    var label  tagMid = na
+    color colMid = color.new(col, math.min(100, color.t(col) + 20))
+    color colTxt = color.new(col, math.max(0, color.t(col) - 30))
+    // Два независимых условия вместо if/else: ветки не обязаны возвращать один тип.
+    bool isNew = active and not na(t0) and (na(cur) or t0 != cur.t0)
+    bool isUpd = active and not na(t0) and not isNew
+    if isNew
+        if not na(cur)
+            // Свеча закрылась: её диапазон продлевается на новую свечу (CRT).
+            line.delete(extHi)
+            line.delete(extLo)
+            line.delete(extMid)
+            label.delete(tagHi)
+            label.delete(tagLo)
+            label.delete(tagMid)
+            if showExt
+                float pm = (cur.h + cur.l) / 2
+                extHi  := line.new(cur.t1, cur.h, t1, cur.h, xloc = xloc.bar_time, color = col, style = rngStyle, width = lineWidth)
+                extLo  := line.new(cur.t1, cur.l, t1, cur.l, xloc = xloc.bar_time, color = col, style = rngStyle, width = lineWidth)
+                extMid := line.new(cur.t1, pm, t1, pm, xloc = xloc.bar_time, color = colMid, style = rngStyle, width = lineWidth)
+                if showTags
+                    string nm = f_tfName(tf)
+                    tagHi  := label.new(t1, cur.h, nm + " H", xloc = xloc.bar_time, style = label.style_label_left, color = #00000000, textcolor = colTxt, size = size.tiny)
+                    tagLo  := label.new(t1, cur.l, nm + " L", xloc = xloc.bar_time, style = label.style_label_left, color = #00000000, textcolor = colTxt, size = size.tiny)
+                    tagMid := label.new(t1, pm, nm + " 50%", xloc = xloc.bar_time, style = label.style_label_left, color = #00000000, textcolor = colTxt, size = size.tiny)
+            hist.push(cur)
+        // Текущая свеча тоже считается, поэтому закрытых храним keep − 1.
+        while hist.size() > keep - 1
+            hist.shift().erase()
+        cur := Candle.new(t0, t1, high, low)
+        if showSep and (na(dupT0) or t0 != dupT0)
+            cur.sep := line.new(t0, low, t0, high + syminfo.mintick, xloc = xloc.bar_time, extend = extend.both, color = col, style = sepStyle, width = lineWidth)
+        if showHL
+            cur.hi := line.new(t0, high, t1, high, xloc = xloc.bar_time, color = col, style = rngStyle, width = lineWidth)
+            cur.lo := line.new(t0, low, t1, low, xloc = xloc.bar_time, color = col, style = rngStyle, width = lineWidth)
+        if showMid
+            cur.mid := line.new(t0, hl2, t1, hl2, xloc = xloc.bar_time, color = colMid, style = rngStyle, width = lineWidth)
+        if showOpen
+            cur.op := line.new(t0, open, t1, open, xloc = xloc.bar_time, color = colMid, style = line.style_dashed, width = lineWidth)
+        if showTime
+            cur.tm := label.new(t0, high, f_timeText(t0, tf), xloc = xloc.bar_time, style = label.style_label_lower_left, color = #00000000, textcolor = colTxt, size = size.tiny)
+    if isUpd
+        // Свеча ещё формируется: двигаем максимум, минимум и 50%.
+        cur.h := math.max(cur.h, high)
+        cur.l := math.min(cur.l, low)
+        f_setY(cur.hi, cur.h)
+        f_setY(cur.lo, cur.l)
+        f_setY(cur.mid, (cur.h + cur.l) / 2)
+        if not na(cur.tm)
+            cur.tm.set_y(cur.h)
+    active
+
+// ───────────────────────────────── Запуск ────────────────────────────────────────
+// Слой работает, только если его таймфрейм старше таймфрейма графика.
+int  chartSec = timeframe.in_seconds()
+int  sec1     = timeframe.in_seconds(tf1)
+int  sec2     = timeframe.in_seconds(tf2)
+bool act1     = on1 and sec1 > chartSec
+bool act2     = on2 and sec2 > chartSec
+[a0, a1] = f_bounds(tf1)
+[b0, b1] = f_bounds(tf2)
+// Где граница младшей свечи совпадает с границей старшей, вертикаль рисует только старшая.
+int dup1 = act2 and sec2 > sec1 ? b0 : na
+int dup2 = act1 and sec1 > sec2 ? a0 : na
+f_layer(act1, tf1, col1, keep1, a0, a1, dup1)
+f_layer(act2, tf2, col2, keep2, b0, b1, dup2)

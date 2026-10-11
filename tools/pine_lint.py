@@ -34,7 +34,8 @@ BUILTINS = {
     "open", "high", "low", "close", "volume", "hlc3", "hl2", "ohlc4", "time", "bar_index",
     "na", "nz", "true", "false", "int", "float", "bool", "string", "indicator", "plotshape",
     "bgcolor", "barcolor", "fill", "alertcondition", "chart", "session", "dayofweek",
-    "last_bar_index", "position",
+    "last_bar_index", "position", "time_close", "timestamp", "year", "month", "dayofmonth",
+    "hour", "minute", "second", "weekofyear", "hl2",
 }
 TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_\.]*")
 
@@ -98,13 +99,29 @@ def main(path):
 
     # 2. Объявления.
     globals_, declared = {}, set()
-    decl_re = re.compile(r"^(?:var\s+|varip\s+)?(?:(?:[a-z]+(?:<[^>]+>)?|chart\.point)\s+)?([A-Za-z_]\w*)\s*=(?!=)")
+    decl_re = re.compile(r"^(?:var\s+|varip\s+)?(?:(?:[A-Za-z_][\w.]*(?:<[^>]+>)?)\s+)?([A-Za-z_]\w*)\s*=(?!=)")
     tuple_re = re.compile(r"^\[([^\]]+)\]\s*=(?!=)")
-    func_re = re.compile(r"^([A-Za-z_]\w*)\s*\(([^)]*)\)\s*=>")
+    func_re = re.compile(r"^(?:method\s+)?([A-Za-z_]\w*)\s*\(([^)]*)\)\s*=>")
+    type_re = re.compile(r"^type\s+([A-Za-z_]\w*)$")
+    field_re = re.compile(r"^(?:varip\s+)?[A-Za-z_][\w.]*(?:<[^>]+>)?\s+([A-Za-z_]\w*)(?:\s*=.*)?$")
+    type_indent = None
     for_re = re.compile(r"^for\s+(?:\[([^\]]+)\]|([A-Za-z_]\w*))\s*(?:=|in)\b")
     locals_ = []  # (строка, имя)
     for ln, ind, text in logical:
         names = []
+        # Поля пользовательского типа: строки с отступом под «type Имя».
+        if type_indent is not None and ind > type_indent:
+            m = field_re.match(text)
+            if m:
+                declared.add(m.group(1))
+                continue
+        type_indent = None
+        m = type_re.match(text)
+        if m:
+            declared.add(m.group(1))
+            globals_[m.group(1)] = ln
+            type_indent = ind
+            continue
         m = func_re.match(text)
         if m:
             declared.add(m.group(1))
