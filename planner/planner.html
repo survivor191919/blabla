@@ -1,0 +1,307 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<title>Планер дня — студенческий</title><style>
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: "DejaVu Sans","Segoe UI",Arial,sans-serif; color:#222; font-size:9pt; }
+.page { width:210mm; height:297mm; padding:10mm 10mm 8mm; page-break-after:always; overflow:hidden; border-top:6mm solid var(--ac); }
+header { margin-bottom:3mm; }
+.tag { display:inline-block; background:var(--ac); color:#fff; padding:1mm 3mm; border-radius:3mm; font-size:8pt; letter-spacing:.5pt; text-transform:uppercase; }
+h1 { margin:1.5mm 0 0; font-size:20pt; color:var(--ac); }
+.sub { color:#555; font-style:italic; margin-bottom:2mm; }
+.meta { display:flex; gap:6mm; font-size:8pt; color:#444; border-bottom:.4mm solid var(--ac); padding-bottom:2mm; }
+.grid { display:grid; grid-template-columns: 1.25fr 1fr; gap:5mm; height: calc(297mm - 10mm - 8mm - 6mm - 27mm); }
+.blk { margin-bottom:2.5mm; border:.3mm solid var(--ac); border-radius:2mm; overflow:hidden; }
+.bh { background:var(--soft); padding:1mm 2mm; display:flex; justify-content:space-between; align-items:baseline; }
+.bh b { color:var(--ac); } .bh i { font-size:6.5pt; color:#666; max-width:62%; text-align:right; }
+.row { display:grid; grid-template-columns: 11mm 1fr 6mm; height:8.2mm; border-top:.2mm solid #ccc; }
+.row .t { font-size:7.5pt; color:var(--ac); padding:1.2mm 0 0 1.5mm; border-right:.2mm solid #ccc; }
+.row .ck { border-left:.2mm solid #ccc; position:relative; } .row .ck::after { content:""; position:absolute; left:1.3mm; top:2.2mm; width:3.2mm; height:3.2mm; border:.3mm solid #888; border-radius:.6mm; }
+.legend { font-size:6.5pt; color:#777; text-align:center; }
+aside { display:flex; flex-direction:column; gap:2.5mm; }
+.card { border:.3mm solid var(--ac); border-radius:2mm; padding:1.5mm 2mm 2mm; }
+.ct { font-weight:bold; color:var(--ac); font-size:8pt; margin-bottom:1.2mm; }
+.cap { font-size:6.8pt; color:#666; margin:1mm 0 0; }
+.ln { display:block; height:5.5mm; border-bottom:.2mm solid #999; }
+.mi { display:flex; align-items:flex-end; gap:1.5mm; margin-bottom:.4mm; } .mi .ln { height:5.2mm; }
+.grow { flex:1; } .s { width:16mm; flex:none; }
+.bx { display:inline-block; width:3.2mm; height:3.2mm; border:.3mm solid #888; border-radius:.6mm; margin-right:1mm; vertical-align:middle; flex:none; margin-bottom:1mm; }
+.bx.big { width:4mm; height:4mm; }
+.boxes { display:flex; flex-wrap:wrap; gap:1.2mm; }
+.boxes .bx { width:4.2mm; height:4.2mm; border-radius:1mm; margin:0; }
+.pr { display:flex; gap:2mm; margin-bottom:.3mm; }
+.tb { display:grid; grid-template-columns:1fr 1.4fr 14mm 13mm; gap:1.5mm; align-items:end; margin-bottom:.3mm; }
+.th { font-size:6.5pt; color:#666; border-bottom:.2mm solid var(--ac); }
+.st { font-size:7pt; color:#888; }
+.hb { display:inline-flex; align-items:center; margin-right:2mm; }
+@media screen { body { background:#ddd; } .page { background:#fff; margin:6mm auto; box-shadow:0 0 4mm #0003; } }
+</style></head><body>
+
+<section class="page" style="--ac:#2f6f8f;--soft:#e6f1f6">
+  <header>
+    <div class="tag">Обычная неделя</div>
+    <h1>Понедельник</h1>
+    <div class="sub">Старт недели: настроиться и расставить приоритеты</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём · зарядка · завтрак · обзор недели (10 мин)</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Пары / учёба · обед · не забыть перерыв</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Домашка · спорт · отдых · план на завтра</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">🗓 ЦЕЛИ НЕДЕЛИ</div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="cap">Дедлайны недели:</div><div class="ln"></div><div class="ln"></div></div><div class="card "><div class="ct">🎓 ПАРЫ СЕГОДНЯ</div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="cap">время · предмет / ауд. / что принести</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">💧 ТЕЛО</div>
+      <div class="cap">Вода</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div>
+      <div class="cap">Сон: лёг ____ · встал ____ · ☐ 7+ ч</div>
+      <div class="cap">Движение: ☐ прогулка ☐ зарядка ☐ зал</div></div><div class="card "><div class="ct">🌗 ИТОГ ДНЯ</div>
+      <div class="cap">Что получилось:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Что перенёс и почему:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Завтра первым делом:</div><div class="ln"></div></div></aside>
+  </div>
+</section>
+<section class="page" style="--ac:#2f6f8f;--soft:#e6f1f6">
+  <header>
+    <div class="tag">Обычная неделя</div>
+    <h1>Вторник · Среда · Четверг</h1>
+    <div class="sub">Рабочие дни: ритм и фокус</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём · завтрак · дорога · повторить лекции</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Пары · обед · самоподготовка</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Дом. задания · личное время · сон до 23:00</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">🎓 ПАРЫ СЕГОДНЯ</div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="cap">время · предмет / ауд. / что принести</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">✅ ВТОРОСТЕПЕННОЕ</div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">🍅 ПОМОДОРО (25/5)</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div></div><div class="card "><div class="ct">💧 ТЕЛО</div>
+      <div class="cap">Вода</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div>
+      <div class="cap">Сон: лёг ____ · встал ____ · ☐ 7+ ч</div>
+      <div class="cap">Движение: ☐ прогулка ☐ зарядка ☐ зал</div></div><div class="card "><div class="ct">🌗 ИТОГ ДНЯ</div>
+      <div class="cap">Что получилось:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Что перенёс и почему:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Завтра первым делом:</div><div class="ln"></div></div></aside>
+  </div>
+</section>
+<section class="page" style="--ac:#2f6f8f;--soft:#e6f1f6">
+  <header>
+    <div class="tag">Обычная неделя</div>
+    <h1>Пятница</h1>
+    <div class="sub">Закрыть хвосты и подвести итоги недели</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём · завтрак · разобрать «хвосты»</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Пары · обед · сдача мелких работ</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Итоги недели · отдых · планы на выходные</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">🎓 ПАРЫ СЕГОДНЯ</div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="cap">время · предмет / ауд. / что принести</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">🏁 ИТОГИ НЕДЕЛИ</div>
+      <div class="cap">Закрыто:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">«Хвосты» → на выходные / следующую неделю:</div><div class="ln"></div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Оценка недели: ☐1 ☐2 ☐3 ☐4 ☐5</div></div><div class="card "><div class="ct">✅ ДО ВЫХОДНЫХ</div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">💧 ТЕЛО</div>
+      <div class="cap">Вода</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div>
+      <div class="cap">Сон: лёг ____ · встал ____ · ☐ 7+ ч</div>
+      <div class="cap">Движение: ☐ прогулка ☐ зарядка ☐ зал</div></div></aside>
+  </div>
+</section>
+<section class="page" style="--ac:#b5532a;--soft:#fbece4">
+  <header>
+    <div class="tag">Отчётная неделя</div>
+    <h1>Понедельник</h1>
+    <div class="sub">Старт отчётной недели: составить карту сдачи</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём · завтрак · выписать ВСЕ сдачи и сроки</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Пары · приоритет: ближайший дедлайн</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Подготовка по плану · сон ≥ 7 ч</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">📑 СДАЧА / ЗАЧЁТЫ / ОТЧЁТНОСТЬ</div><div class="tb th"><span>Предмет</span><span>Что сдать</span><span>Срок</span><span>Статус</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="cap">Статус: ☐ не начат · ☐ в процессе · ☑ сдано</div></div><div class="card "><div class="ct">🎓 ПАРЫ СЕГОДНЯ</div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="pr"><span class="ln s"></span><span class="ln grow"></span></div><div class="cap">время · предмет / ауд. / что принести</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">🍅 ПОМОДОРО (25/5)</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div></div><div class="card "><div class="ct">💧 ТЕЛО</div>
+      <div class="cap">Вода</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div>
+      <div class="cap">Сон: лёг ____ · встал ____ · ☐ 7+ ч</div>
+      <div class="cap">Движение: ☐ прогулка ☐ зарядка ☐ зал</div></div><div class="card "><div class="ct">🌗 ИТОГ ДНЯ</div>
+      <div class="cap">Что получилось:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Что перенёс и почему:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Завтра первым делом:</div><div class="ln"></div></div></aside>
+  </div>
+</section>
+<section class="page" style="--ac:#b5532a;--soft:#fbece4">
+  <header>
+    <div class="tag">Отчётная неделя</div>
+    <h1>Вторник · Среда · Четверг</h1>
+    <div class="sub">Режим штурма: сдаём и готовимся</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём · завтрак · самое сложное первым делом</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Пары / сдачи · обед · блок подготовки</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Повторение · лёгкая нагрузка · сон</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">📑 ДЕДЛАЙНЫ СЕГОДНЯ / ЗАВТРА</div><div class="tb th"><span>Предмет</span><span>Что сдать</span><span>Срок</span><span>Статус</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="cap">Статус: ☐ не начат · ☐ в процессе · ☑ сдано</div></div><div class="card "><div class="ct">🧠 ПОДГОТОВКА (по приоритету)</div><div class="mi"><span class="bx"></span><span class="ln grow"></span><span class="ln s"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span><span class="ln s"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span><span class="ln s"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span><span class="ln s"></span></div><div class="cap">тема / что сделать · сколько часов</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">🍅 ПОМОДОРО (25/5)</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div></div><div class="card "><div class="ct">💧 ТЕЛО</div>
+      <div class="cap">Вода</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div>
+      <div class="cap">Сон: лёг ____ · встал ____ · ☐ 7+ ч</div>
+      <div class="cap">Движение: ☐ прогулка ☐ зарядка ☐ зал</div></div><div class="card "><div class="ct">🌗 ИТОГ ДНЯ</div>
+      <div class="cap">Что получилось:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Что перенёс и почему:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Завтра первым делом:</div><div class="ln"></div></div></aside>
+  </div>
+</section>
+<section class="page" style="--ac:#b5532a;--soft:#fbece4">
+  <header>
+    <div class="tag">Отчётная неделя</div>
+    <h1>Пятница</h1>
+    <div class="sub">Финиш отчётной недели: добить и выдохнуть</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём · завтрак · последние сдачи</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Пары / пересдачи · обед · закрыть долги</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Итоги · награда себе · полноценный отдых</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">📑 ЧТО ЕЩЁ НЕ СДАНО</div><div class="tb th"><span>Предмет</span><span>Что сдать</span><span>Срок</span><span>Статус</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="tb"><span class="ln"></span><span class="ln"></span><span class="ln"></span><span class="st">☐ ☐ ☑</span></div><div class="cap">Статус: ☐ не начат · ☐ в процессе · ☑ сдано</div></div><div class="card "><div class="ct">🏁 ИТОГИ НЕДЕЛИ</div>
+      <div class="cap">Закрыто:</div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">«Хвосты» → на выходные / следующую неделю:</div><div class="ln"></div><div class="ln"></div><div class="ln"></div>
+      <div class="cap">Оценка недели: ☐1 ☐2 ☐3 ☐4 ☐5</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">💧 ТЕЛО</div>
+      <div class="cap">Вода</div><div class="boxes"><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span><span class="bx"></span></div>
+      <div class="cap">Сон: лёг ____ · встал ____ · ☐ 7+ ч</div>
+      <div class="cap">Движение: ☐ прогулка ☐ зарядка ☐ зал</div></div></aside>
+  </div>
+</section>
+<section class="page" style="--ac:#2f6f8f;--soft:#e6f1f6">
+  <header>
+    <div class="tag">Обычная неделя</div>
+    <h1>Суббота · Воскресенье</h1>
+    <div class="sub">Восстановление + немного подготовки к новой неделе</div>
+    <div class="meta">
+      <span>Дата: <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></span>
+      <span>Энергия: ☐ низкая ☐ средняя ☐ высокая</span>
+      <span>Настроение: ☹ 😐 🙂</span>
+    </div>
+  </header>
+  <div class="grid">
+    <main>
+      
+    <div class="blk">
+      <div class="bh"><b>🌅 УТРО</b><i>Подъём без будильника · завтрак · зарядка</i></div>
+      <div class="row"><span class="t">06:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">07:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">08:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">09:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">10:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">11:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>☀️ ДЕНЬ</b><i>Хобби · встречи · прогулка · 1 блок учёбы (по желанию)</i></div>
+      <div class="row"><span class="t">12:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">13:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">14:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">15:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">16:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">17:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      
+    <div class="blk">
+      <div class="bh"><b>🌙 ВЕЧЕР</b><i>Отдых · подготовка вещей · план на понедельник</i></div>
+      <div class="row"><span class="t">18:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">19:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">20:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">21:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">22:00</span><span class="w"></span><span class="ck"></span></div><div class="row"><span class="t">23:00</span><span class="w"></span><span class="ck"></span></div>
+    </div>
+      <div class="legend">Подсказка: пары — обвести рамкой · учёба — заштриховать · отдых — волна ～</div>
+    </main>
+    <aside><div class="card "><div class="ct">🎈 ДЛЯ СЕБЯ</div>
+      <div class="cap">Хочу сегодня (хобби, друзья, спорт, отдых):</div><div class="ln"></div><div class="ln"></div><div class="ln"></div></div><div class="card "><div class="ct">🧺 БЫТ / ДЕЛА</div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="cap">☐ уборка ☐ стирка ☐ продукты ☐ звонок родным</div></div><div class="card "><div class="ct">🎯 ГЛАВНЫЕ ЗАДАЧИ (макс. 3)</div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div><div class="mi"><span class="bx big"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">📚 ХВОСТЫ УЧЁБЫ (максимум 1–2 блока)</div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div><div class="mi"><span class="bx"></span><span class="ln grow"></span></div></div><div class="card "><div class="ct">🗓 ПЕРЕД НОВОЙ НЕДЕЛЕЙ</div><div class="cap">Тип недели: ☐ обычная ☐ отчётная</div><div class="cap">☐ расписание проверено ☐ вещи готовы ☐ дедлайны выписаны</div></div><div class="card "><div class="ct">💡 ЗАМЕТКИ / ИДЕИ</div><div class="ln"></div><div class="ln"></div><div class="ln"></div><div class="ln"></div></div></aside>
+  </div>
+</section>
+</body></html>
